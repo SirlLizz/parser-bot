@@ -1,5 +1,4 @@
-require('dotenv').config();
-
+import 'dotenv/config'
 export const conf = {
   authFirebase: {
     email: process.env.AUTH_FIREBASE_EMAIL,
