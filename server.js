@@ -2,6 +2,9 @@ import { conf } from './constaints/config.js';
 import TelegramBot  from 'node-telegram-bot-api'
 import {Avito}  from './helpers/avito.js'
 import {States} from "./helpers/states.js";
+import express from 'express'
+
+const app = express()
 
 const bot = new TelegramBot(conf.botToken, { polling: true })
 bot.setMyCommands([
@@ -14,19 +17,20 @@ bot.setMyCommands([
 let avito = new Avito();
 let states = new States()
 
-bot.on('text', async msg => {
+app.post('/webhook', async (req, res) => {
+    const msg = req.body.message;
     try {
-        if(msg.text.startsWith('/start')) {
+        if (msg.text.startsWith('/start')) {
             await bot.sendMessage(msg.chat.id, `Вы запустили бота!`);
             await openMenu(msg);
-        }
-        else if(msg.text === '/menu') {
+        } else if (msg.text === '/menu') {
             await openMenu(msg);
             states.deleteStatesToUser(msg.from.id)
-        }
-        else if(msg.text === conf.title.mySearches) {
+        } else if (msg.text === conf.title.mySearches) {
             let tasks = await avito.getTasksToUser(msg.from.id)
-            let reformatTask = tasks.map((task) => {return {text: task.name, url: task.url}})
+            let reformatTask = tasks.map((task) => {
+                return {text: task.name, url: task.url}
+            })
             await bot.sendMessage(msg.chat.id, "Поиски", {
                     reply_markup:
                         {
@@ -35,10 +39,11 @@ bot.on('text', async msg => {
                 }
             );
             states.deleteStatesToUser(msg.from.id)
-        }
-        else if(msg.text === conf.title.deleteSearch) {
+        } else if (msg.text === conf.title.deleteSearch) {
             let tasks = await avito.getTasksToUser(msg.from.id)
-            let reformatTask = tasks.map((task) => {return {text: task.name, callback_data: task.id}})
+            let reformatTask = tasks.map((task) => {
+                return {text: task.name, callback_data: task.id}
+            })
             await bot.sendMessage(msg.chat.id, "Поиски", {
                     reply_markup:
                         {
@@ -47,44 +52,38 @@ bot.on('text', async msg => {
                 }
             );
             states.addStatesToUser(msg.from.id, conf.title.deleteSearch)
-        }
-        else if(msg.text === conf.title.addSearch)
-        {
+        } else if (msg.text === conf.title.addSearch) {
             await bot.sendMessage(msg.chat.id, "Введите ссылку для мониторинга:");
             states.addStatesToUser(msg.from.id, conf.title.addSearch)
-        }
-        else if(msg.text === conf.title.info) {
+        } else if (msg.text === conf.title.info) {
             await bot.sendMessage(msg.chat.id,
                 `Ваш ID: ${msg.from.id}\nЕсли возникли вопросы - обращаться к @sirllizz`
             );
-        }
-        else {
+        } else {
             let currentUserStates = states.getStatesToUser(msg.from.id)
-            if(currentUserStates.length === 1 && currentUserStates[0].state === conf.title.addSearch){
-                if(checkAvitoPath(msg.text)){
+            if (currentUserStates.length === 1 && currentUserStates[0].state === conf.title.addSearch) {
+                if (checkAvitoPath(msg.text)) {
                     await bot.sendMessage(msg.chat.id, conf.title.addSearchName);
                     states.addStatesToUser(msg.from.id, conf.title.addSearchName, msg.text)
-                }else{
+                } else {
                     await bot.sendMessage(msg.chat.id, "Ссылка некорректна");
                     states.deleteStatesToUser(msg.from.id)
                     await openMenu(msg)
                 }
-            }
-            else if(currentUserStates.length === 2 && (currentUserStates[0].state === conf.title.addSearch &&
-                currentUserStates[1].state === conf.title.addSearchName && checkAvitoPath(currentUserStates[1].value))||
+            } else if (currentUserStates.length === 2 && (currentUserStates[0].state === conf.title.addSearch &&
+                    currentUserStates[1].state === conf.title.addSearchName && checkAvitoPath(currentUserStates[1].value)) ||
                 (currentUserStates[1].state === conf.title.addSearch &&
-                currentUserStates[0].state === conf.title.addSearchName && checkAvitoPath(currentUserStates[0].value))){
+                    currentUserStates[0].state === conf.title.addSearchName && checkAvitoPath(currentUserStates[0].value))) {
                 let task;
 
-                if(checkAvitoPath(currentUserStates[1].value))
-                {
+                if (checkAvitoPath(currentUserStates[1].value)) {
                     task = {
                         user_id: msg.from.id,
                         id: msg.message_id,
                         name: msg.text,
                         url: currentUserStates[1].value
                     }
-                }else{
+                } else {
                     task = {
                         user_id: msg.from.id,
                         id: msg.message_id,
@@ -95,33 +94,31 @@ bot.on('text', async msg => {
                 await avito.addTasksToUser(task)
                 await bot.sendMessage(msg.chat.id, "Ссылка добавлена");
                 states.deleteStatesToUser(msg.from.id)
-            }
-            else{
+            } else {
                 await bot.sendMessage(msg.chat.id, "Нераспознаная команда");
                 states.deleteStatesToUser(msg.from.id)
             }
         }
-    }
-    catch(error) {
+    } catch (error) {
         console.log(error);
     }
-})
-
-bot.on('callback_query', async ctx => {
-    try {
-        let currentUserStates = states.getStatesToUser(ctx.from.id)
-        if(ctx.data === "closeMenu") {
-            await bot.deleteMessage(ctx.message.chat.id, ctx.message.message_id);
-            states.deleteStatesToUser(ctx.from.id)
+    if(req.body.callback_query){
+        let ctx = req.body.callback_query.message
+        try {
+            let currentUserStates = states.getStatesToUser(ctx.from.id)
+            if(ctx.data === "closeMenu") {
+                await bot.deleteMessage(ctx.message.chat.id, ctx.message.message_id);
+                states.deleteStatesToUser(ctx.from.id)
+            }
+            else if(currentUserStates.length === 1 && currentUserStates[0].state === conf.title.deleteSearch){
+                await avito.deleteTasksToUser(ctx.from.id, ctx.data)
+                await bot.deleteMessage(ctx.message.chat.id, ctx.message.message_id);
+                states.deleteStatesToUser(ctx.from.id)
+            }
         }
-        else if(currentUserStates.length === 1 && currentUserStates[0].state === conf.title.deleteSearch){
-            await avito.deleteTasksToUser(ctx.from.id, ctx.data)
-            await bot.deleteMessage(ctx.message.chat.id, ctx.message.message_id);
-            states.deleteStatesToUser(ctx.from.id)
+        catch(error) {
+            console.log(error);
         }
-    }
-    catch(error) {
-        console.log(error);
     }
 })
 
@@ -160,3 +157,8 @@ function notifyUser(data){
         bot.sendMessage(msg.chat.id, text);
     }
 }*/
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
