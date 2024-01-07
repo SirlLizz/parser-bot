@@ -1,6 +1,7 @@
 import { conf } from './constaints/config.js';
 import TelegramBot  from 'node-telegram-bot-api'
 import {Avito}  from './helpers/avito.js'
+import {States} from "./helpers/states.js";
 
 const bot = new TelegramBot(conf.botToken, { polling: true })
 bot.setMyCommands([
@@ -10,8 +11,8 @@ bot.setMyCommands([
     }
 ]);
 
-let lastCommand = '';
 let avito = new Avito();
+let states = new States()
 
 bot.on('text', async msg => {
     try {
@@ -24,35 +25,31 @@ bot.on('text', async msg => {
         }
         else if(msg.text === conf.title.mySearches) {
             let tasks = await avito.getTasksToUser(msg.from.id)
-            let reformatTask = tasks.map((task, index) => {return {text: index+1, url: task.url}})
+            let reformatTask = tasks.map((task) => {return {text: task.name, url: task.url}})
             await bot.sendMessage(msg.chat.id, "Поиски", {
                     reply_markup:
                         {
-                            inline_keyboard: [
-                                reformatTask,
-                                    [{text: 'Закрыть Меню', callback_data: 'closeMenu'}]]
+                            inline_keyboard: splitTasksToView(reformatTask)
                         }
                 }
             );
         }
         else if(msg.text === conf.title.deleteSearch) {
             let tasks = await avito.getTasksToUser(msg.from.id)
-            let reformatTask = tasks.map((task, index) => {return {text: index+1, callback_data: task.id}})
+            let reformatTask = tasks.map((task) => {return {text: task.name, callback_data: task.id}})
             await bot.sendMessage(msg.chat.id, "Поиски", {
                     reply_markup:
                         {
-                            inline_keyboard: [
-                                reformatTask,
-                                [{text: 'Закрыть Меню', callback_data: 'closeMenu'}]]
+                            inline_keyboard: splitTasksToView(reformatTask)
                         }
                 }
             );
-            lastCommand = conf.title.deleteSearch
+            states.addStatesToUser(msg.from.id, conf.title.deleteSearch)
         }
         else if(msg.text === conf.title.addSearch)
         {
             await bot.sendMessage(msg.chat.id, "Введите ссылку для мониторинга:");
-            lastCommand = conf.title.addSearch;
+            states.addStatesToUser(msg.from.id, conf.title.addSearch)
         }
         else if(msg.text === conf.title.info) {
             await bot.sendMessage(msg.chat.id,
@@ -60,24 +57,46 @@ bot.on('text', async msg => {
             );
         }
         else {
-            if(lastCommand === conf.title.addSearch){
+            let currentUserStates = states.getStatesToUser(msg.from.id)
+            if(currentUserStates.length === 1 && currentUserStates[0].state === conf.title.addSearch){
                 if(checkAvitoPath(msg.text)){
-                    let task = {
-                        user_id: msg.from.id,
-                        id: msg.message_id,
-                        url: msg.text
-                    };
-                    await avito.addTasksToUser(task)
-                    await bot.sendMessage(msg.chat.id, "Ссылка добавлена");
+                    await bot.sendMessage(msg.chat.id, conf.title.addSearchName);
+                    states.addStatesToUser(msg.from.id, conf.title.addSearchName, msg.text)
                 }else{
                     await bot.sendMessage(msg.chat.id, "Ссылка некорректна");
+                    states.deleteStatesToUser(msg.from.id)
+                    await openMenu(msg)
                 }
-                lastCommand = '';
+            }
+            else if(currentUserStates.length === 2 && (currentUserStates[0].state === conf.title.addSearch &&
+                currentUserStates[1].state === conf.title.addSearchName && checkAvitoPath(currentUserStates[1].value))||
+                (currentUserStates[1].state === conf.title.addSearch &&
+                currentUserStates[0].state === conf.title.addSearchName && checkAvitoPath(currentUserStates[0].value))){
+                let task;
+
+                if(checkAvitoPath(currentUserStates[1].value))
+                {
+                    task = {
+                        user_id: msg.from.id,
+                        id: msg.message_id,
+                        name: msg.text,
+                        url: currentUserStates[1].value
+                    }
+                }else{
+                    task = {
+                        user_id: msg.from.id,
+                        id: msg.message_id,
+                        name: msg.text,
+                        url: currentUserStates[0].value
+                    }
+                }
+                await avito.addTasksToUser(task)
+                await bot.sendMessage(msg.chat.id, "Ссылка добавлена");
+                states.deleteStatesToUser(msg.from.id)
             }
             else{
-                await bot.sendMessage(msg.chat.id, "Нераспознаная комманда");
+                await bot.sendMessage(msg.chat.id, "Нераспознаная команда");
             }
-
         }
     }
     catch(error) {
@@ -87,10 +106,11 @@ bot.on('text', async msg => {
 
 bot.on('callback_query', async ctx => {
     try {
+        let currentUserStates = states.getStatesToUser(ctx.from.id)
         if(ctx.data === "closeMenu") {
             await bot.deleteMessage(ctx.message.chat.id, ctx.message.message_id);
         }
-        else if(lastCommand === conf.title.deleteSearch){
+        else if(currentUserStates.length === 1 && currentUserStates[0].state === conf.title.deleteSearch){
             await avito.deleteTasksToUser(ctx.from.id, ctx.data)
             await bot.deleteMessage(ctx.message.chat.id, ctx.message.message_id);
         }
@@ -112,12 +132,13 @@ async function openMenu(msg) {
     })
 }
 
-async function removeMenu(msg) {
-    await bot.sendMessage(msg.chat.id, `Меню закрыто`, {
-        reply_markup: {
-            remove_keyboard: true
-        }
-    })
+function splitTasksToView(tasks) {
+    let chunkSize = 3
+    let splitTasks = Array.from({ length: Math.ceil(tasks.length / chunkSize) }, (_, index) =>
+        tasks.slice(index * chunkSize, (index + 1) * chunkSize)
+    );
+    splitTasks.push([{text: 'Закрыть Меню', callback_data: 'closeMenu'}])
+    return splitTasks
 }
 
 function checkAvitoPath(url) {

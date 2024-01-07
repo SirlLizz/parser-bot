@@ -18,7 +18,8 @@ export const conf = {
     mySearches : "🗃Мои поиски",
     addSearch: "🆕Добавить поиск",
     deleteSearch: "🗑Удалить поиск",
-    info: "📲 Информация"
+    info: "📲 Информация",
+    addSearchName: "Введите название поиска"
   }
 }
 
