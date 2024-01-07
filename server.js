@@ -22,6 +22,7 @@ bot.on('text', async msg => {
         }
         else if(msg.text === '/menu') {
             await openMenu(msg);
+            states.deleteStatesToUser(msg.from.id)
         }
         else if(msg.text === conf.title.mySearches) {
             let tasks = await avito.getTasksToUser(msg.from.id)
@@ -33,6 +34,7 @@ bot.on('text', async msg => {
                         }
                 }
             );
+            states.deleteStatesToUser(msg.from.id)
         }
         else if(msg.text === conf.title.deleteSearch) {
             let tasks = await avito.getTasksToUser(msg.from.id)
@@ -96,6 +98,7 @@ bot.on('text', async msg => {
             }
             else{
                 await bot.sendMessage(msg.chat.id, "Нераспознаная команда");
+                states.deleteStatesToUser(msg.from.id)
             }
         }
     }
@@ -109,10 +112,12 @@ bot.on('callback_query', async ctx => {
         let currentUserStates = states.getStatesToUser(ctx.from.id)
         if(ctx.data === "closeMenu") {
             await bot.deleteMessage(ctx.message.chat.id, ctx.message.message_id);
+            states.deleteStatesToUser(ctx.from.id)
         }
         else if(currentUserStates.length === 1 && currentUserStates[0].state === conf.title.deleteSearch){
             await avito.deleteTasksToUser(ctx.from.id, ctx.data)
             await bot.deleteMessage(ctx.message.chat.id, ctx.message.message_id);
+            states.deleteStatesToUser(ctx.from.id)
         }
     }
     catch(error) {

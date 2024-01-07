@@ -18,6 +18,7 @@
     "log4js": "^6.9.1",
     "node-telegram-bot-api": "^0.64.0",
     "puppeteer": "^21.7.0",
-    "telegraf": "^4.15.3"
+    "telegraf": "^4.15.3",
+    "vercel": "^33.0.2"
   }
 }
