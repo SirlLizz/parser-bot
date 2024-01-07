@@ -151,6 +151,8 @@ function checkAvitoPath(url) {
     return pattern.test(url)
 }
 
+module.exports = bot
+
 /*
 function notifyUser(data){
     const text = `Появился новый товар ${data.title} c ценой ${data.price} руб
