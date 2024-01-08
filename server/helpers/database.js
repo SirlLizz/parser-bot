@@ -1,17 +1,17 @@
-import { initializeApp } from 'firebase/app';
-import { getDatabase, set, ref, get, child, onChildAdded, onChildMoved, onChildRemoved, onChildChanged } from "firebase/database";
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { conf } from '../constaints/config.js';
+const { initializeApp } = require('firebase/app');
+const { getDatabase, set, ref, get, child } = require("firebase/database");
+const { getAuth, signInWithEmailAndPassword } = require('firebase/auth');
+const { firebaseConfig } = require('../configs');
 class DatabaseService {
     app
     db
     constructor() {
         try {
             this.app = initializeApp({
-                ...conf.firebase
+                ...firebaseConfig.firebase
             });
             const auth = getAuth();
-            signInWithEmailAndPassword(auth, conf.authFirebase.email, conf.authFirebase.password).catch(function (error) {
+            signInWithEmailAndPassword(auth, firebaseConfig.authFirebase.email, firebaseConfig.authFirebase.password).catch(function (error) {
                 const { code, message } = error;
                 console.log(`${code} - ${message}`);
             });
@@ -63,5 +63,4 @@ class DatabaseService {
     }
 }
 
-const db = new DatabaseService();
-export default db;
+module.exports = DatabaseService;

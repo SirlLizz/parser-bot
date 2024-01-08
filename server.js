@@ -1,12 +1,10 @@
-import { conf } from './constaints/config.js';
-import TelegramBot  from 'node-telegram-bot-api'
-import {Avito}  from './helpers/avito.js'
-import {States} from "./helpers/states.js";
-import express from 'express'
+const { telegramConfig } = require('./server/configs');
+const TelegramBot = require( 'node-telegram-bot-api');
+const {Avito}  = require('./server/controllers')
+const {States} = require("./server/helpers");
 
-const app = express()
 
-const bot = new TelegramBot(conf.botToken, { polling: true })
+const bot = new TelegramBot(telegramConfig.botToken, { polling: true })
 bot.setMyCommands([
     {
         command: "menu",
@@ -27,7 +25,7 @@ bot.on('text', async msg => {
             await openMenu(msg);
             states.deleteStatesToUser(msg.from.id)
         }
-        else if(msg.text === conf.title.mySearches) {
+        else if(msg.text === telegramConfig.title.mySearches) {
             let tasks = await avito.getTasksToUser(msg.from.id)
             let reformatTask = tasks.map((task) => {return {text: task.name, url: task.url}})
             await bot.sendMessage(msg.chat.id, "Поиски", {
@@ -39,7 +37,7 @@ bot.on('text', async msg => {
             );
             states.deleteStatesToUser(msg.from.id)
         }
-        else if(msg.text === conf.title.deleteSearch) {
+        else if(msg.text === telegramConfig.title.deleteSearch) {
             let tasks = await avito.getTasksToUser(msg.from.id)
             let reformatTask = tasks.map((task) => {return {text: task.name, callback_data: task.id}})
             await bot.sendMessage(msg.chat.id, "Поиски", {
@@ -49,34 +47,34 @@ bot.on('text', async msg => {
                         }
                 }
             );
-            states.addStatesToUser(msg.from.id, conf.title.deleteSearch)
+            states.addStatesToUser(msg.from.id, telegramConfig.title.deleteSearch)
         }
-        else if(msg.text === conf.title.addSearch)
+        else if(msg.text === telegramConfig.title.addSearch)
         {
             await bot.sendMessage(msg.chat.id, "Введите ссылку для мониторинга:");
-            states.addStatesToUser(msg.from.id, conf.title.addSearch)
+            states.addStatesToUser(msg.from.id, telegramConfig.title.addSearch)
         }
-        else if(msg.text === conf.title.info) {
+        else if(msg.text === telegramConfig.title.info) {
             await bot.sendMessage(msg.chat.id,
                 `Ваш ID: ${msg.from.id}\nЕсли возникли вопросы - обращаться к @sirllizz`
             );
         }
         else {
             let currentUserStates = states.getStatesToUser(msg.from.id)
-            if(currentUserStates.length === 1 && currentUserStates[0].state === conf.title.addSearch){
+            if(currentUserStates.length === 1 && currentUserStates[0].state === telegramConfig.title.addSearch){
                 if(checkAvitoPath(msg.text)){
-                    await bot.sendMessage(msg.chat.id, conf.title.addSearchName);
-                    states.addStatesToUser(msg.from.id, conf.title.addSearchName, msg.text)
+                    await bot.sendMessage(msg.chat.id, telegramConfig.title.addSearchName);
+                    states.addStatesToUser(msg.from.id, telegramConfig.title.addSearchName, msg.text)
                 }else{
                     await bot.sendMessage(msg.chat.id, "Ссылка некорректна");
                     states.deleteStatesToUser(msg.from.id)
                     await openMenu(msg)
                 }
             }
-            else if(currentUserStates.length === 2 && (currentUserStates[0].state === conf.title.addSearch &&
-                currentUserStates[1].state === conf.title.addSearchName && checkAvitoPath(currentUserStates[1].value))||
-                (currentUserStates[1].state === conf.title.addSearch &&
-                currentUserStates[0].state === conf.title.addSearchName && checkAvitoPath(currentUserStates[0].value))){
+            else if(currentUserStates.length === 2 && (currentUserStates[0].state === telegramConfig.title.addSearch &&
+                currentUserStates[1].state === telegramConfig.title.addSearchName && checkAvitoPath(currentUserStates[1].value))||
+                (currentUserStates[1].state === telegramConfig.title.addSearch &&
+                currentUserStates[0].state === telegramConfig.title.addSearchName && checkAvitoPath(currentUserStates[0].value))){
                 let task;
 
                 if(checkAvitoPath(currentUserStates[1].value))
@@ -117,7 +115,7 @@ bot.on('callback_query', async ctx => {
             await bot.deleteMessage(ctx.message.chat.id, ctx.message.message_id);
             states.deleteStatesToUser(ctx.from.id)
         }
-        else if(currentUserStates.length === 1 && currentUserStates[0].state === conf.title.deleteSearch){
+        else if(currentUserStates.length === 1 && currentUserStates[0].state === telegramConfig.title.deleteSearch){
             await avito.deleteTasksToUser(ctx.from.id, ctx.data)
             await bot.deleteMessage(ctx.message.chat.id, ctx.message.message_id);
             states.deleteStatesToUser(ctx.from.id)
@@ -132,8 +130,8 @@ async function openMenu(msg) {
     await bot.sendMessage(msg.chat.id, "Меню открыто", {
         reply_markup: {
             keyboard: [
-                [conf.title.mySearches, conf.title.addSearch],
-                [conf.title.deleteSearch, conf.title.info]
+                [telegramConfig.title.mySearches, telegramConfig.title.addSearch],
+                [telegramConfig.title.deleteSearch, telegramConfig.title.info]
             ],
             resize_keyboard: true
         }

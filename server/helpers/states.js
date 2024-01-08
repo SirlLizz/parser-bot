@@ -1,4 +1,4 @@
-export class States {
+class States {
     states = [];
 
     addStatesToUser(userId, state, value){
@@ -17,3 +17,4 @@ export class States {
         this.states = this.states.filter(state => state.userId !== userId);
     }
 }
+module.exports = States;
