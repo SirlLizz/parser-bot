@@ -1,5 +1,5 @@
 const {Database} = require("../helpers");
-class avito {
+class Avito {
     constructor() {
         this.db = new Database()
     }
@@ -15,4 +15,4 @@ class avito {
         await this.db.deleteTaskForUser(userId, taskId);
     }
 }
-module.exports = avito;
+module.exports = Avito;
