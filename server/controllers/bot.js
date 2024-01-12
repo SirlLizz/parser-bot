@@ -126,8 +126,7 @@ class Bot {
                 await this.bot.deleteMessage(msg.message.chat.id, msg.message.message_id);
                 await states.deleteStatesToUser(msg.from.id)
             }
-            else if(currentUserStates.length === 1 && currentUserStates[0].state === telegramConfig.title.deleteSearch){
-                console.log(telegramConfig.title.deleteSearch)
+            else if(currentUserStates.filter(state => state.state === telegramConfig.title.deleteSearch)){
                 await avito.deleteTasksToUser(msg.from.id, msg.data)
                 await this.bot.deleteMessage(msg.message.chat.id, msg.message.message_id);
                 await states.deleteStatesToUser(msg.from.id)
