@@ -64,9 +64,10 @@ class DatabaseService {
 
     async getStatesToUser(userId) {
         return new Promise((resolve, reject) => {
-            get(child(ref(this.db), 'state')).then((snapshot) => {
+            get(child(ref(this.db), 'states/' + userId.toString())).then((snapshot) => {
                 const states = snapshot.val() || {};
-                const userStates = Object.values(states).filter(state => state.userId === userId);
+                const userStates = Object.values(states);
+                console.log(userStates)
                 resolve(userStates);
             }).catch((error) => {
                 reject(error);
@@ -76,7 +77,7 @@ class DatabaseService {
 
     async addStatesToUser(userId, state, value) {
         return new Promise((resolve, reject) => {
-            set(ref(this.db, 'state/' + userId), {state: state, value: value}).then(() => resolve(''))
+            set(ref(this.db, 'states/' + userId.toString() + '/' + state), {state: state, value: value}).then(() => resolve(''))
                 .catch((error) => {
                     reject(error)
                 });
@@ -85,16 +86,16 @@ class DatabaseService {
 
     async deleteStatesToUser(userId) {
         return new Promise((resolve, reject) => {
-            const tasksRef = ref(this.db, 'tasks');
-            get(child(tasksRef, userId)).then((snapshot) => {
+            let stateRef = child(ref(this.db), 'states/' + userId.toString())
+            get(stateRef).then((snapshot) => {
                 const state = snapshot.val();
                 if (state) {
-                    return set(child(tasksRef, userId), null);
+                    return set(stateRef, null);
                 } else {
-                    reject("Task not found or does not belong to the user");
+                    reject("States not found or does not belong to the user");
                 }
             }).then(() => {
-                resolve('Task deleted successfully');
+                resolve('States deleted successfully');
             }).catch((error) => {
                 reject(error);
             });

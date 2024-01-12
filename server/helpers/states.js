@@ -1,4 +1,4 @@
-const {Database} = require("./index");
+const Database = require('./database');
 
 class States {
     constructor() {
@@ -9,6 +9,7 @@ class States {
     }
 
     async addStatesToUser(userId, state, value){
+        value = value === undefined? " " : value
         await this.db.addStatesToUser(userId, state, value);
     }
 
