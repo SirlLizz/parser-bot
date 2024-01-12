@@ -152,21 +152,6 @@ function checkAvitoPath(url) {
     return pattern.test(url)
 }
 
-let wait = (ms) => {
-    const start = Date.now();
-    let now = start;
-    while (now - start < ms) {
-        now = Date.now();
-    }
-}
-
-
-while(true){
-    wait(3000);
-    let date = new Date()
-    console.log(`${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`)
-}
-
 /*
 function notifyUser(data){
     const text = `Появился новый товар ${data.title} c ценой ${data.price} руб

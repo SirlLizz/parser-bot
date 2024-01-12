@@ -1,20 +1,19 @@
+const {Database} = require("./index");
+
 class States {
-    states = [];
-
-    addStatesToUser(userId, state, value){
-        this.states.push({
-            userId: userId,
-            state: state,
-            value: value
-        })
+    constructor() {
+        this.db = new Database()
+    }
+    async getStatesToUser(userId){
+        return await this.db.getStatesToUser(userId);
     }
 
-    getStatesToUser(userId){
-        return this.states.filter(state => state.userId === userId);
+    async addStatesToUser(userId, state, value){
+        await this.db.addStatesToUser(userId, state, value);
     }
 
-    deleteStatesToUser(userId){
-        this.states = this.states.filter(state => state.userId !== userId);
+    async deleteStatesToUser(userId){
+        await this.db.deleteStatesToUser(userId);
     }
 }
 module.exports = States;

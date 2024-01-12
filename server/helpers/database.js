@@ -61,6 +61,45 @@ class DatabaseService {
             });
         });
     }
+
+    async getStatesToUser(userId) {
+        return new Promise((resolve, reject) => {
+            get(child(ref(this.db), 'state')).then((snapshot) => {
+                const states = snapshot.val() || {};
+                const userStates = Object.values(states).filter(state => state.userId === userId);
+                resolve(userStates);
+            }).catch((error) => {
+                reject(error);
+            });
+        });
+    }
+
+    async addStatesToUser(userId, state, value) {
+        return new Promise((resolve, reject) => {
+            set(ref(this.db, 'state/' + userId), {state: state, value: value}).then(() => resolve(''))
+                .catch((error) => {
+                    reject(error)
+                });
+        })
+    }
+
+    async deleteStatesToUser(userId) {
+        return new Promise((resolve, reject) => {
+            const tasksRef = ref(this.db, 'tasks');
+            get(child(tasksRef, userId)).then((snapshot) => {
+                const state = snapshot.val();
+                if (state) {
+                    return set(child(tasksRef, userId), null);
+                } else {
+                    reject("Task not found or does not belong to the user");
+                }
+            }).then(() => {
+                resolve('Task deleted successfully');
+            }).catch((error) => {
+                reject(error);
+            });
+        });
+    }
 }
 
 module.exports = DatabaseService;

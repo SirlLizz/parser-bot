@@ -1,5 +1,5 @@
-const Avito = require('./avito');
+const Bot = require('./bot');
 
 module.exports = {
-    Avito
+    Bot
 };

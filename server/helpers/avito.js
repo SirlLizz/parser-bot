@@ -1,4 +1,4 @@
-const {Database} = require("../helpers");
+const Database = require('./database');
 class Avito {
     constructor() {
         this.db = new Database()
