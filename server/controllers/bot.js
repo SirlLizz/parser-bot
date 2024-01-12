@@ -4,14 +4,18 @@ const {States} = require("../helpers");
 
 
 class Bot {
-    constructor(bot, msg) {
+    constructor(bot, message, callback_query) {
         this.bot = bot;
-        this.message = msg;
+        this.message = message;
+        this.callback_query = callback_query;
     }
 
-    async handle() {
+    async handleMessage() {
         let avito = new Avito();
         let states = new States();
+        if(this.message === null){
+            return;
+        }
         let msg = this.message;
 
         try {
@@ -99,9 +103,34 @@ class Bot {
                     await states.deleteStatesToUser(msg.from.id)
                 }
                 else{
-                    await this.bot.sendMessage(msg.chat.id, msg);
+                    await this.bot.sendMessage(msg.chat.id, "Команда не распознана");
                     await states.deleteStatesToUser(msg.from.id)
                 }
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async handleCallbackQuery() {
+        let avito = new Avito();
+        let states = new States();
+        if(this.callback_query === null){
+            return;
+        }
+        let msg = this.callback_query;
+
+        try {
+            let currentUserStates = await states.getStatesToUser(msg.from.id)
+            if(msg.data === "closeMenu") {
+                await this.bot.deleteMessage(msg.message.chat.id, msg.message.message_id);
+                await states.deleteStatesToUser(msg.from.id)
+            }
+            else if(currentUserStates.length === 1 && currentUserStates[0].state === telegramConfig.title.deleteSearch){
+                console.log(telegramConfig.title.deleteSearch)
+                await avito.deleteTasksToUser(msg.from.id, msg.data)
+                await this.bot.deleteMessage(msg.message.chat.id, msg.message.message_id);
+                await states.deleteStatesToUser(msg.from.id)
             }
         } catch (error) {
             console.error(error);
