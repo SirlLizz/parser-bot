@@ -10,15 +10,17 @@ const { Bot } = require('../server/controllers');
 module.exports = async (request, response) => {
     try {
         const { body } = request;
+        const bot = new TelegramBot(telegramConfig.botToken);
 
-        if (!body.message) {
-            return;
+        if (body.message) {
+            const botController = new Bot(bot, body.message, undefined);
+            await botController.handleMessage();
+        }
+        else if (body.callback_query) {
+            const botController = new Bot(bot, undefined, body.callback_query);
+            await botController.handleCallbackQuery();
         }
 
-        const bot = new TelegramBot(telegramConfig.botToken);
-        const botController = new Bot(bot, body.message);
-
-        await botController.handle();
     } catch (error) {
         console.error(error);
     } finally {
