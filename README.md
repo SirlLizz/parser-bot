@@ -1,6 +1,9 @@
 # --Avito Parser Bot--
 Serverless Telegram bot base on stack NodeJs + node-telegram-bot-api + Firebase and complited to deploy on Vercel(if you add node in .env file(check constaints/telegram.js))
 
+THIS PROJECT WAS NOT POSSIBLE ON THE BASIS OF A FREE ZIP ON VERCEL
+
+
 # Running
 ### 1. Telegram
 ````
